@@ -145,12 +145,9 @@ forwarder:
         @type null
       </match>
 
-      # Send all logs to elastic search
       @include fluentd-inputs.conf
       @include fluentd-output.conf
-      @inclue file-fluent.conf
-      @include elastic-fluent.conf
-
+      @include filter-kubernetes.conf:
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
       {{- end }}
@@ -261,23 +258,6 @@ forwarder:
           host #{hostname}
         </labels>
       </source>
-
-# This line is to check if the configuration above is working
-    file-fluent.conf: |
-      <match **>
-      @type file
-      path /tmp/file-test.log
-      </match>
-
-    elastic-fluent.conf: |
-      # Send the logs to elasticsearch
-      <match **>
-      @type elasticsearch
-      host "#{ENV['FLUENT_ELASTICSEARCH_HOST'] || 'elasticsearch.elastic-kibana'}"
-      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
-      index_name fluentd-k8s
-      type_name fluentd
-      </match>
 
   ## @param forwarder.extraArgs Extra arguments for the Fluentd command line
   ## ref: https://docs.fluentd.org/deployment/command-line-option
@@ -608,6 +588,12 @@ aggregator:
 
       @include fluentd-inputs.conf
       @include fluentd-output.conf
+
+      # Send all logs to elastic search
+      @include elastic-fluent.conf
+      # Allows us to test if the aggregator is actually receiving logs
+
+      @include file-fluent.conf 
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
       {{- end }}
@@ -672,6 +658,34 @@ aggregator:
           host #{hostname}
         </labels>
       </source>
+      # This line is to check if the configuration above is working
+    file-fluent.conf: |
+      <match **>
+      @type file
+      path /tmp/file-test.log
+      </match>
+
+    elastic-fluent.conf: |
+      # Send the logs to elasticsearch
+      <match **>
+      @type elasticsearch
+      host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
+      index_name fluentd-k8s
+      type_name fluentd
+
+      # # prevent duplicate log entries and updates
+      # id_key _hash
+      # remove_keys _hash, date
+      # write_operation create
+
+      <buffer>
+        @type file
+        path /opt/bitnami/fluentd/logs/buffers/logs.buffer
+        flush_thread_count 2
+        flush_interval 5s
+      </buffer>
+      </match>
 
   ## @param aggregator.port Port the Aggregator container will listen for logs. Leave it blank to ignore.
   ## You can specify other ports in the aggregator.containerPorts parameter
@@ -680,7 +694,7 @@ aggregator:
   ## @param aggregator.extraArgs Extra arguments for the Fluentd command line
   ## ref: https://docs.fluentd.org/deployment/command-line-option
   ##
-  extraArgs: ""
+  extraArgs: 
   ## @param aggregator.extraEnv Extra environment variables to pass to the container
   ## extraEnv:
   ##   - name: MY_ENV_VAR
@@ -806,8 +820,7 @@ aggregator:
     ##   key:
     ##   certificate:
     ##
-    secrets: [secret_name: elastic-ip]
-#   secret_name: elasticsearch]
+    secrets: [elasticsearch-ip]
   ## Configure extra options for liveness probe
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
   ## @param aggregator.livenessProbe.enabled Enable livenessProbe

@@ -145,8 +145,12 @@ forwarder:
         @type null
       </match>
 
+      # Send all logs to elastic search
       @include fluentd-inputs.conf
       @include fluentd-output.conf
+      @inclue file-fluent.conf
+      @include elastic-fluent.conf
+
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
       {{- end }}
@@ -159,21 +163,33 @@ forwarder:
       # Get the logs from the containers running in the node
       <source>
         @type tail
+        format json
+        read_from_head true
+        tag kubernetes.*
         path /var/log/containers/*.log
+        pos_file /opt/bitnami/fluentd/logs/buffers/fluentd-docker.pos
+
         # exclude Fluentd logs
         exclude_path /var/log/containers/*fluentd*.log
-        pos_file /opt/bitnami/fluentd/logs/buffers/fluentd-docker.pos
-        tag kubernetes.*
-        read_from_head true
-        <parse>
-          @type json
-          time_key time
-          time_format %Y-%m-%dT%H:%M:%S.%NZ
-        </parse>
+
+      <parse>
+        @type kubernetes
+        @type "#{ENV['FLUENT_CONTAINER_TAIL_PARSER_TYPE'] || 'json'}"
+        time_format %Y-%m-%dT%H:%M:%S.%NZ
+      </parse>
       </source>
+
       # enrich with kubernetes metadata
       <filter kubernetes.**>
         @type kubernetes_metadata
+        @id filter_kube_metadata
+        kubernetes_url "#{ENV['FLUENT_FILTER_KUBERNETES_URL'] || 'https://' + ENV.fetch('KUBERNETES_SERVICE_HOST') + ':' + ENV.fetch('KUBERNETES_SERVICE_PORT') + '/api'}"
+        verify_ssl "#{ENV['KUBERNETES_VERIFY_SSL'] || true}"
+        ca_file "#{ENV['KUBERNETES_CA_FILE']}"
+        skip_labels "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_LABELS'] || 'false'}"
+        skip_container_metadata "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_CONTAINER_METADATA'] || 'false'}"
+        skip_master_url "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_MASTER_URL'] || 'false'}"
+        skip_namespace_metadata "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_NAMESPACE_METADATA'] || 'false'}"
       </filter>
     fluentd-output.conf: |
       # Throw the healthcheck to the standard output instead of forwarding it
@@ -245,6 +261,24 @@ forwarder:
           host #{hostname}
         </labels>
       </source>
+
+# This line is to check if the configuration above is working
+    file-fluent.conf: |
+      <match **>
+      @type file
+      path /tmp/file-test.log
+      </match>
+
+    elastic-fluent.conf: |
+      # Send the logs to elasticsearch
+      <match **>
+      @type elasticsearch
+      host "#{ENV['FLUENT_ELASTICSEARCH_HOST'] || 'elasticsearch.elastic-kibana'}"
+      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
+      index_name fluentd-k8s
+      type_name fluentd
+      </match>
+
   ## @param forwarder.extraArgs Extra arguments for the Fluentd command line
   ## ref: https://docs.fluentd.org/deployment/command-line-option
   ##
@@ -601,6 +635,10 @@ aggregator:
         bind 0.0.0.0
         port 9880
       </source>
+      
+      <source>
+      @type tail
+      </source>    
     fluentd-output.conf: |
       # Throw the healthcheck to the standard output
       <match fluentd.healthcheck>
@@ -768,7 +806,8 @@ aggregator:
     ##   key:
     ##   certificate:
     ##
-    secrets: []
+    secrets: [secret_name: elastic-ip]
+#   secret_name: elasticsearch]
   ## Configure extra options for liveness probe
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
   ## @param aggregator.livenessProbe.enabled Enable livenessProbe

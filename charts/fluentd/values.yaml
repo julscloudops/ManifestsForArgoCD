@@ -147,7 +147,7 @@ forwarder:
 
       @include fluentd-inputs.conf
       @include fluentd-output.conf
-      @include filter-kubernetes.conf:
+      @include filter-kubernetes.conf
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
       {{- end }}

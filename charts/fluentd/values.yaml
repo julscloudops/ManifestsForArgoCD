@@ -272,9 +272,7 @@ forwarder:
   ##   - name: MY_ENV_VAR
   ##     value: my_value
   ##
-  extraEnv: 
-    - name: FLUENT_ELASTICSEARCH_HOST
-      value: localhost
+  extraEnv: []
   ## @param forwarder.containerPorts [array] Ports the forwarder containers will listen on
   ##
   containerPorts:
@@ -707,7 +705,9 @@ aggregator:
   ##   - name: MY_ENV_VAR
   ##     value: my_value
   ##
-  extraEnv: []
+  extraEnv:
+    - name: FLUENT_ELASTICSEARCH_HOST
+      value: localhost
   ## @param aggregator.containerPorts [array] Ports the aggregator containers will listen on
   ##
   containerPorts:

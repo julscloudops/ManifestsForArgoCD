@@ -147,7 +147,6 @@ forwarder:
 
       @include fluentd-inputs.conf
       @include fluentd-output.conf
-      @include filter-kubernetes.conf
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
       {{- end }}
@@ -194,6 +193,7 @@ forwarder:
         @type stdout
       </match>
       {{- if .Values.aggregator.enabled }}
+      
       # Forward all logs to the aggregators
       <match **>
         @type forward
@@ -209,6 +209,7 @@ forwarder:
         {{- $domain := default "cluster.local" .Values.clusterDomain }}
         {{- $port := .Values.aggregator.port | int }}
         {{- range $i, $e := until (.Values.aggregator.replicaCount | int) }}
+        
         <server>
           {{ printf "host %s-%d.%s-headless.%s.svc.%s" $fullName $i $fullName $global.Release.Namespace $domain }}
           {{ printf "port %d" $port }}
@@ -217,12 +218,14 @@ forwarder:
           {{- end }}
         </server>
         {{- end}}
+        
         <buffer>
           @type file
           path /opt/bitnami/fluentd/logs/buffers/logs.buffer
           flush_thread_count 2
           flush_interval 5s
         </buffer>
+
       </match>
       {{- else }}
       # Send the logs to the standard output
@@ -230,6 +233,7 @@ forwarder:
         @type stdout
       </match>
       {{- end }}
+
     metrics.conf: |
       # Prometheus Exporter Plugin
       # input plugin that exports metrics
@@ -268,7 +272,9 @@ forwarder:
   ##   - name: MY_ENV_VAR
   ##     value: my_value
   ##
-  extraEnv: []
+  extraEnv: 
+    - name: FLUENT_ELASTICSEARCH_HOST
+      value: localhost
   ## @param forwarder.containerPorts [array] Ports the forwarder containers will listen on
   ##
   containerPorts:
@@ -588,16 +594,15 @@ aggregator:
 
       @include fluentd-inputs.conf
       @include fluentd-output.conf
-
-      # Send all logs to elastic search
-      @include elastic-fluent.conf
       # Allows us to test if the aggregator is actually receiving logs
+      @include file-fluent.conf     
 
-      @include file-fluent.conf 
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
       {{- end }}
+
     fluentd-inputs.conf: |
+
       # TCP input to receive logs from
       {{- if .Values.aggregator.port }}
       <source>
@@ -635,7 +640,36 @@ aggregator:
       <match **>
         @type stdout
       </match>
-    metrics.conf: |
+
+      <match **>
+      @type file
+      path /tmp/file-test.log
+      </match>
+      
+      # Send the logs to elasticsearch
+      <match **>
+      @type elasticsearch
+      # host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+      # port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
+      host "elastic-private-ip"
+      port "9200"
+      index_name fluentd-k8s
+      type_name fluentd
+
+      # # prevent duplicate log entries and updates
+      # id_key _hash
+      # remove_keys _hash, date
+      # write_operation create
+
+      <buffer>
+        @type file
+        path /opt/bitnami/fluentd/logs/buffers/logs.buffer
+        flush_thread_count 2
+        flush_interval 5s
+      </buffer>
+      </match>
+
+  metrics.conf: |
       # Prometheus Exporter Plugin
       # input plugin that exports metrics
       <source>
@@ -659,34 +693,7 @@ aggregator:
         </labels>
       </source>
       # This line is to check if the configuration above is working
-    file-fluent.conf: |
-      <match **>
-      @type file
-      path /tmp/file-test.log
-      </match>
-
-    elastic-fluent.conf: |
-      # Send the logs to elasticsearch
-      <match **>
-      @type elasticsearch
-      host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
-      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
-      index_name fluentd-k8s
-      type_name fluentd
-
-      # # prevent duplicate log entries and updates
-      # id_key _hash
-      # remove_keys _hash, date
-      # write_operation create
-
-      <buffer>
-        @type file
-        path /opt/bitnami/fluentd/logs/buffers/logs.buffer
-        flush_thread_count 2
-        flush_interval 5s
-      </buffer>
-      </match>
-
+  
   ## @param aggregator.port Port the Aggregator container will listen for logs. Leave it blank to ignore.
   ## You can specify other ports in the aggregator.containerPorts parameter
   ##
@@ -820,7 +827,7 @@ aggregator:
     ##   key:
     ##   certificate:
     ##
-    secrets: [elasticsearch-ip]
+    secrets: []
   ## Configure extra options for liveness probe
   ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/#configure-probes
   ## @param aggregator.livenessProbe.enabled Enable livenessProbe

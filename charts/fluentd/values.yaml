@@ -890,9 +890,7 @@ aggregator:
   ##
   resources:
     ## Example:
-    ## limits:
-    ##    cpu: 500m
-    ##    memory: 1Gi
+       
     limits: {}
     ## Examples:
     ## requests:

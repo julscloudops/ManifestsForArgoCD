@@ -156,6 +156,7 @@ forwarder:
         @type http
         port 9880
       </source>
+
       # Get the logs from the containers running in the node
       <source>
         @type tail
@@ -164,7 +165,6 @@ forwarder:
         tag kubernetes.*
         path /var/log/containers/*.log
         pos_file /opt/bitnami/fluentd/logs/buffers/fluentd-docker.pos
-
         # exclude Fluentd logs
         exclude_path /var/log/containers/*fluentd*.log
 
@@ -228,6 +228,7 @@ forwarder:
 
       </match>
       {{- else }}
+  
       # Send the logs to the standard output
       <match **>
         @type stdout
@@ -592,8 +593,6 @@ aggregator:
 
       @include fluentd-inputs.conf
       @include fluentd-output.conf
-      # Allows us to test if the aggregator is actually receiving logs
-      @include file-fluent.conf     
 
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
@@ -627,7 +626,8 @@ aggregator:
       
       <source>
       @type tail
-      </source>    
+      </source>  
+
     fluentd-output.conf: |
       # Throw the healthcheck to the standard output
       <match fluentd.healthcheck>
@@ -647,10 +647,8 @@ aggregator:
       # Send the logs to elasticsearch
       <match **>
       @type elasticsearch
-      # host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
-      # port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
-      host "elastic-private-ip"
-      port "9200"
+      host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
       index_name fluentd-k8s
       type_name fluentd
 

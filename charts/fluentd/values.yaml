@@ -196,51 +196,51 @@ forwarder:
       </match>
       {{- if .Values.aggregator.enabled }}
       
-      # # Forward all logs to the aggregators
-      # <match **>
-      #   @type forward
-      #   {{- if .Values.tls.enabled }}
-      #   transport tls
-      #   tls_cert_path /opt/bitnami/fluentd/certs/out_forward/ca.crt
-      #   tls_client_cert_path /opt/bitnami/fluentd/certs/out_forward/tls.crt
-      #   tls_client_private_key_path /opt/bitnami/fluentd/certs/out_forward/tls.key
-      #   {{- end }}
-
-      #   {{- $fullName := (include "common.names.fullname" .) }}
-      #   {{- $global := . }}
-      #   {{- $domain := default "cluster.local" .Values.clusterDomain }}
-      #   {{- $port := .Values.aggregator.port | int }}
-      #   {{- range $i, $e := until (.Values.aggregator.replicaCount | int) }}
-        
-      #   <server>
-      #     {{ printf "host %s-%d.%s-headless.%s.svc.%s" $fullName $i $fullName $global.Release.Namespace $domain }}
-      #     {{ printf "port %d" $port }}
-      #     {{- if ne $i 0 }}
-      #     standby
-      #     {{- end }}
-      #   </server>
-      #   {{- end}}
-        
-      #   <buffer>
-      #     @type file
-      #     path /opt/bitnami/fluentd/logs/buffers/logs.buffer
-      #     flush_thread_count 2
-      #     flush_interval 5s
-      #   </buffer>
-
-      # </match>
-      # {{- else }}
-  
-      # # Send the logs to the standard output
-      # <match **>
-      #   @type stdout
-      # </match>
-      # {{- end }}
-
+      # Forward all logs to the aggregators
       <match **>
-       @type file
-       path /tmp/file-test.log
+        @type forward
+        {{- if .Values.tls.enabled }}
+        transport tls
+        tls_cert_path /opt/bitnami/fluentd/certs/out_forward/ca.crt
+        tls_client_cert_path /opt/bitnami/fluentd/certs/out_forward/tls.crt
+        tls_client_private_key_path /opt/bitnami/fluentd/certs/out_forward/tls.key
+        {{- end }}
+
+        {{- $fullName := (include "common.names.fullname" .) }}
+        {{- $global := . }}
+        {{- $domain := default "cluster.local" .Values.clusterDomain }}
+        {{- $port := .Values.aggregator.port | int }}
+        {{- range $i, $e := until (.Values.aggregator.replicaCount | int) }}
+        
+        <server>
+          {{ printf "host %s-%d.%s-headless.%s.svc.%s" $fullName $i $fullName $global.Release.Namespace $domain }}
+          {{ printf "port %d" $port }}
+          {{- if ne $i 0 }}
+          standby
+          {{- end }}
+        </server>
+        {{- end}}
+        
+        <buffer>
+          @type file
+          path /opt/bitnami/fluentd/logs/buffers/logs.buffer
+          flush_thread_count 2
+          flush_interval 5s
+        </buffer>
+
       </match>
+      {{- else }}
+  
+      # Send the logs to the standard output
+      <match **>
+        @type stdout
+      </match>
+      {{- end }}
+
+      # <match **>
+      #  @type file
+      #  path /tmp/file-test.log
+      # </match>
   
     metrics.conf: |
       # Prometheus Exporter Plugin
@@ -636,38 +636,38 @@ aggregator:
         @type stdout
       </match>
 
-      # Send the logs to the standard output
-      <match **>
-        @type stdout
-      </match>
+      # # Send the logs to the standard output
+      # <match **>
+      #   @type stdout
+      # </match>
 
       <match **>
       @type file
       path /tmp/file-test.log
       </match>
       
-      # Send the logs to elasticsearch
-      <match **>
-      @type elasticsearch
-      include_tag_key true
-      host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
-      port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
-      index_name fluentd-k8s
-      type_name fluentd
-      logtash_format true
+      # # Send the logs to elasticsearch
+      # <match **>
+      # @type elasticsearch
+      # include_tag_key true
+      # host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+      # port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
+      # index_name fluentd-k8s
+      # type_name fluentd
+      # logtash_format true
 
-      # # prevent duplicate log entries and updates
-      # id_key _hash
-      # remove_keys _hash, date
-      # write_operation create
+      # # # prevent duplicate log entries and updates
+      # # id_key _hash
+      # # remove_keys _hash, date
+      # # write_operation create
 
-      <buffer>
-        @type file
-        path /opt/bitnami/fluentd/logs/buffers/logs.buffer
-        flush_thread_count 2
-        flush_interval 5s
-      </buffer>
-      </match>
+      # <buffer>
+      #   @type file
+      #   path /opt/bitnami/fluentd/logs/buffers/logs.buffer
+      #   flush_thread_count 2
+      #   flush_interval 5s
+      # </buffer>
+      # </match>
 
   metrics.conf: |
       # Prometheus Exporter Plugin

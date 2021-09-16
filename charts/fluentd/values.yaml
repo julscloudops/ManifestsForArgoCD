@@ -187,6 +187,7 @@ forwarder:
         skip_master_url "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_MASTER_URL'] || 'false'}"
         skip_namespace_metadata "#{ENV['FLUENT_KUBERNETES_METADATA_SKIP_NAMESPACE_METADATA'] || 'false'}"
       </filter>
+
     fluentd-output.conf: |
       # Throw the healthcheck to the standard output instead of forwarding it
       <match fluentd.healthcheck>
@@ -235,6 +236,11 @@ forwarder:
       </match>
       {{- end }}
 
+      <match **>
+       @type file
+       path /tmp/file-test.log
+      </match>
+  
     metrics.conf: |
       # Prometheus Exporter Plugin
       # input plugin that exports metrics
@@ -621,11 +627,7 @@ aggregator:
         bind 0.0.0.0
         port 9880
       </source>
-      
-      # <source>
-      # @type tail
-      # </source>  
-
+  
     fluentd-output.conf: |
       # Throw the healthcheck to the standard output
 

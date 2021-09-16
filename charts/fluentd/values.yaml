@@ -593,13 +593,11 @@ aggregator:
 
       @include fluentd-inputs.conf
       @include fluentd-output.conf
-
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
       {{- end }}
 
     fluentd-inputs.conf: |
-
       # TCP input to receive logs from
       {{- if .Values.aggregator.port }}
       <source>
@@ -657,13 +655,13 @@ aggregator:
       # remove_keys _hash, date
       # write_operation create
 
-      <buffer>
-        @type file
-        path /opt/bitnami/fluentd/logs/buffers/logs.buffer
-        flush_thread_count 2
-        flush_interval 5s
-      </buffer>
-      </match>
+      # <buffer>
+      #   @type file
+      #   path /opt/bitnami/fluentd/logs/buffers/logs.buffer
+      #   flush_thread_count 2
+      #   flush_interval 5s
+      # </buffer>
+      # </match>
 
   metrics.conf: |
       # Prometheus Exporter Plugin

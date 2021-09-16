@@ -596,14 +596,7 @@ aggregator:
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
       {{- end }}
-
-      <parse>
-        @type kubernetes
-        @type "#{ENV['FLUENT_CONTAINER_TAIL_PARSER_TYPE'] || 'json'}"
-        time_format %Y-%m-%dT%H:%M:%S.%NZ
-      </parse>
-      </source>
-
+      
     fluentd-inputs.conf: |
       # TCP input to receive logs from
       {{- if .Values.aggregator.port }}
@@ -635,6 +628,7 @@ aggregator:
 
     fluentd-output.conf: |
       # Throw the healthcheck to the standard output
+
       <match fluentd.healthcheck>
         @type stdout
       </match>
@@ -652,23 +646,25 @@ aggregator:
       # Send the logs to elasticsearch
       <match **>
       @type elasticsearch
+      include_tag_key true
       host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
       port "#{ENV['FLUENT_ELASTICSEARCH_PORT'] || '9200'}"
       index_name fluentd-k8s
       type_name fluentd
+      logtash_format true
 
       # # prevent duplicate log entries and updates
       # id_key _hash
       # remove_keys _hash, date
       # write_operation create
 
-      # <buffer>
-      #   @type file
-      #   path /opt/bitnami/fluentd/logs/buffers/logs.buffer
-      #   flush_thread_count 2
-      #   flush_interval 5s
-      # </buffer>
-      # </match>
+      <buffer>
+        @type file
+        path /opt/bitnami/fluentd/logs/buffers/logs.buffer
+        flush_thread_count 2
+        flush_interval 5s
+      </buffer>
+      </match>
 
   metrics.conf: |
       # Prometheus Exporter Plugin

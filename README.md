@@ -1,4 +1,4 @@
-ArgoCD manifests  used in my IaC / GitOps Demo with Terraform.
+ArgoCD manifests and helm charts used in my IaC / GitOps Demo on AWS.
 
 
 

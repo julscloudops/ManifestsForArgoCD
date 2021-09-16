@@ -596,7 +596,7 @@ aggregator:
       {{- if .Values.metrics.enabled }}
       @include metrics.conf
       {{- end }}
-      
+
     fluentd-inputs.conf: |
       # TCP input to receive logs from
       {{- if .Values.aggregator.port }}
@@ -622,9 +622,9 @@ aggregator:
         port 9880
       </source>
       
-      <source>
-      @type tail
-      </source>  
+      # <source>
+      # @type tail
+      # </source>  
 
     fluentd-output.conf: |
       # Throw the healthcheck to the standard output

@@ -597,6 +597,13 @@ aggregator:
       @include metrics.conf
       {{- end }}
 
+      <parse>
+        @type kubernetes
+        @type "#{ENV['FLUENT_CONTAINER_TAIL_PARSER_TYPE'] || 'json'}"
+        time_format %Y-%m-%dT%H:%M:%S.%NZ
+      </parse>
+      </source>
+
     fluentd-inputs.conf: |
       # TCP input to receive logs from
       {{- if .Values.aggregator.port }}

@@ -710,7 +710,7 @@ aggregator:
   ##
   extraEnv:
     - name: FLUENT_ELASTICSEARCH_HOST
-      value: localhost
+      value: 10.100.2.120 
   ## @param aggregator.containerPorts [array] Ports the aggregator containers will listen on
   ##
   containerPorts:

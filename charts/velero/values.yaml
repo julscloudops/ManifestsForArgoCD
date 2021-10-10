@@ -28,8 +28,8 @@ labels: {}
 #
 # If using kube2iam or kiam, use the following annotation with your AWS_ACCOUNT_ID
 # and VELERO_ROLE_NAME filled in:
-podAnnotations: {}
-  #  iam.amazonaws.com/role: "arn:aws:iam::<AWS_ACCOUNT_ID>:role/<VELERO_ROLE_NAME>"
+podAnnotations:
+  iam.amazonaws.com/role: "arn:aws:iam::085876827522:role/velero_role"
 
 # Additional pod labels for Velero deployment's template. Optional
 # ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
@@ -166,9 +166,9 @@ configuration:
     default:
     # Additional provider-specific configuration. See link above
     # for details of required/optional fields for your provider.
-    config: 
-      region: us-east-2
-      profile: "default"
+    config:
+    #  region: us-east-2
+    #  profile: "default"
     #  s3ForcePathStyle:
     #  s3Url:
     #  kmsKeyId:

@@ -29,7 +29,6 @@ labels: {}
 # If using kube2iam or kiam, use the following annotation with your AWS_ACCOUNT_ID
 # and VELERO_ROLE_NAME filled in:
 podAnnotations:
-  iam.amazonaws.com/role: "arn:aws:iam::085876827522:role/velero_role"
 
 # Additional pod labels for Velero deployment's template. Optional
 # ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
@@ -53,7 +52,7 @@ dnsPolicy: ClusterFirst
 initContainers: 
 - name: velero-plugin-for-aws
   image: velero/velero-plugin-for-aws:v1.3.0
-  #   imagePullPolicy: IfNotPresent
+  imagePullPolicy: IfNotPresent
   volumeMounts:
   - mountPath: /target
     name: plugins
@@ -146,13 +145,12 @@ cleanUpCRDs: false
 configuration:
   # Cloud provider being used (e.g. aws, azure, gcp).
   provider: aws
-
   # Parameters for the `default` BackupStorageLocation. See
   # https://velero.io/docs/v1.6/api-types/backupstoragelocation/
   backupStorageLocation:
     # name is the name of the backup storage location where backups should be stored. If a name is not provided,
     # a backup storage location will be created with the name "default". Optional.
-    name:
+    name: default
     # provider is the name for the backup storage location provider. If omitted
     # `configuration.provider` will be used instead.
     provider: aws
@@ -167,7 +165,7 @@ configuration:
     # Additional provider-specific configuration. See link above
     # for details of required/optional fields for your provider.
     config:
-    #  region: us-east-2
+      region: us-east-2
     #  profile: "default"
     #  s3ForcePathStyle:
     #  s3Url:
